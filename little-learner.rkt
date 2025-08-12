@@ -36,3 +36,25 @@
 (shape #(#(#(8) #(9)) #(#(4) #(7))))
 
 ;;; Interlude 1
+
+(define sum-1
+  (lambda (t)
+    (summed t (sub1 (tlen t)) 0.0)))
+
+(define summed
+  (lambda (t i a)
+    (cond ((zero? i) (+ (tref t 0) a))
+          (else (summed t (sub1 i) (+ (tref t i) a))))))
+
+(sum-1 #(10 12 14))
+
+;;; Chapter 3
+
+(define l2-loss
+  (lambda (target)
+   (lambda (xs ys)
+    (lambda (theta)
+      (let ((pred-ys ((target xs) theta)))
+        (sum (sqr (- ys pred-ys))))))))
+
+
