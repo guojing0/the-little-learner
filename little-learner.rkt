@@ -57,4 +57,7 @@
       (let ((pred-ys ((target xs) theta)))
         (sum (sqr (- ys pred-ys))))))))
 
-
+(((l2-loss line)
+  #(2 1 4 3)
+  #(1.8 1.2 4.2 3.3))
+ (list 0 0)) ; theta_0 and theta_1, slope and weight
