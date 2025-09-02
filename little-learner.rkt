@@ -1,6 +1,9 @@
 #lang racket
 (require malt)
 
+(define line-xs #(2 1 4 3))
+(define line-ys #(1.8 1.2 4.2 3.3))
+
 ;;; Chapter 1
 
 (define line
@@ -57,7 +60,23 @@
       (let ((pred-ys ((target xs) theta)))
         (sum (sqr (- ys pred-ys))))))))
 
-(((l2-loss line)
-  #(2 1 4 3)
-  #(1.8 1.2 4.2 3.3))
- (list 0 0)) ; theta_0 and theta_1, slope and weight
+;;; Chapter 4
+
+(define obj ((l2-loss line) line-xs line-ys))
+
+(obj (list 3 0)) ; theta_0 and theta_1, slope and weight
+
+(gradient-of obj (list 0 0))
+
+(define revise
+  (lambda (f revs theta)
+    (cond ((zero? revs) theta)
+          (else (revise f (sub1 revs) (f theta))))))
+
+(let ((alpha 0.01)
+      (obj ((l2-loss line) line-xs line-ys)))
+  (let ((f (lambda (theta)
+             (let ((gs (gradient-of obj theta)))
+               (list (- (ref theta 0) (* alpha (ref gs 0)))
+                     (- (ref theta 1) (* alpha (ref gs 1))))))))
+    (revise f 1000 (list 0 0))))
