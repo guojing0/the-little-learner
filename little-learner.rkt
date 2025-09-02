@@ -73,10 +73,15 @@
     (cond ((zero? revs) theta)
           (else (revise f (sub1 revs) (f theta))))))
 
-(let ((alpha 0.01)
-      (obj ((l2-loss line) line-xs line-ys)))
-  (let ((f (lambda (theta)
-             (let ((gs (gradient-of obj theta)))
-               (list (- (ref theta 0) (* alpha (ref gs 0)))
-                     (- (ref theta 1) (* alpha (ref gs 1))))))))
-    (revise f 1000 (list 0 0))))
+(define revs 1000)
+(define alpha 0.01)
+
+(define gradient-descent
+  (lambda (obj theta)
+    (let ((f (lambda (big-theta)
+               (map (lambda (p g) (- p (* alpha g)))
+                    big-theta
+                    (gradient-of obj big-theta)))))
+      (revise f revs theta))))
+
+(gradient-descent obj (list 0 0))
