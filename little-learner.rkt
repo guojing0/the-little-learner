@@ -52,10 +52,10 @@
 
 (define l2-loss
   (lambda (target)
-   (lambda (xs ys)
-    (lambda (theta)
-      (let ((pred-ys ((target xs) theta)))
-        (sum (sqr (- ys pred-ys))))))))
+    (lambda (xs ys)
+      (lambda (theta)
+        (let ((pred-ys ((target xs) theta)))
+          (sum (sqr (- ys pred-ys))))))))
 
 ;;; Chapter 4
 
@@ -86,10 +86,10 @@
                     (gradient-of obj big-theta)))))
       (revise f revs theta))))
 
-(with-hypers
-    ((revs 1000)
-     (alpha 0.01))
-  (gradient-descent obj (list 0 0)))
+;(with-hypers
+;    ((revs 1000)
+;     (alpha 0.01))
+;  (gradient-descent obj (list 0 0)))
 ; '(1.0499993623489503 1.8747718457656533e-6)
 
 (define quad-xs #(-1 0 1 2 3))
@@ -102,11 +102,11 @@
          (+ (* (ref theta 1) t)
             (ref theta 2))))))
 
-(with-hypers
-    ((revs 1000)
-     (alpha 0.001))
-  (gradient-descent ((l2-loss quad) quad-xs quad-ys)
-                    (list 0 0 0)))
+;; (with-hypers
+;;     ((revs 1000)
+;;      (alpha 0.001))
+;;   (gradient-descent ((l2-loss quad) quad-xs quad-ys)
+;;                     (list 0 0 0)))
 ; '(1.4787394427094362 0.9928606519360353 2.0546423148479684)
 
 (define plane-xs
@@ -131,21 +131,21 @@
       (+ (dot-product (ref theta 0) t)
          (ref theta 1)))))
 
-(with-hypers
-    ((revs 10000)
-     (alpha 0.001))
-  (gradient-descent ((l2-loss plane) plane-xs plane-ys)
-                    (list (tensor 0 0) 0)))
+;; (with-hypers
+;;     ((revs 10000)
+;;      (alpha 0.001))
+;;   (gradient-descent ((l2-loss plane) plane-xs plane-ys)
+;;                     (list (tensor 0 0) 0)))
 ; '((tensor 3.9796455320046946 1.976454889887173) 6.1695789842820945)
 
-(map (lambda (x)
-       ((plane x) (list (tensor 3.98 1.98) 6.17)))
-     (list (tensor 1 2.05)
-           (tensor 1 3)
-           (tensor 2 2)
-           (tensor 2 3.91)
-           (tensor 3 6.13)
-           (tensor 4 8.09)))
+;; (map (lambda (x)
+;;        ((plane x) (list (tensor 3.98 1.98) 6.17)))
+;;      (list (tensor 1 2.05)
+;;            (tensor 1 3)
+;;            (tensor 2 2)
+;;            (tensor 2 3.91)
+;;            (tensor 3 6.13)
+;;            (tensor 4 8.09)))
 ; '(14.209 16.09 18.09 21.8718 30.2474 38.108200000000004)
 
 ;;; Chapter 6
@@ -159,23 +159,109 @@
         (let ((b (samples n batch-size)))
           ((expectant (trefs xs b)
                       (trefs ys b))
-                      theta))))))
+           theta))))))
 
-(with-hypers
-    ((revs 500)
-     (alpha 0.01)
-     (batch-size 3))
-  (gradient-descent (sampling-obj (l2-loss line) line-xs line-ys)
-                    (list 0 0)))
+;; (with-hypers
+;;     ((revs 500)
+;;      (alpha 0.01)
+;;      (batch-size 3))
+;;   (gradient-descent (sampling-obj (l2-loss line) line-xs line-ys)
+;;                     (list 0 0)))
+;; '(1.0643197330294396 0.0110968108351973)
 
-(with-hypers
-    ((revs 2000)
-     (alpha 0.001)
-     (batch-size 5))
-  (gradient-descent (sampling-obj (l2-loss plane) plane-xs plane-ys)
-                    (list (tensor 0 0) 0)))
+;; (with-hypers
+;;     ((revs 2000)
+;;      (alpha 0.001)
+;;      (batch-size 5))
+;;   (gradient-descent (sampling-obj (l2-loss plane) plane-xs plane-ys)
+;;                     (list (tensor 0 0) 0)))
+;; '((tensor 4.010846297062351 1.9841311991926505) 6.094113832424458)
 
 ;;; Chapter 7
 
+;; theta -> big-theta
+(define lonely-i ; i is for inflate
+  (lambda (p) (list p)))
 
+;; big-theta -> theta
+(define lonely-d ; d for deflate
+  (lambda (P) (ref P 0)))
 
+;; update
+(define lonely-u
+  (lambda (P g)
+    (list (- (ref P 0) (* alpha g)))))
+
+(define new-gradient-descent
+  (lambda (inflate deflate update)
+    (lambda (obj theta)
+      (let ((f (lambda (big-theta)
+                 (map update
+                      big-theta
+                      (gradient-of obj (map deflate big-theta))))))
+        (map deflate (revise f revs (map inflate theta)))))))
+
+(define lonely-gradient-descent
+  (new-gradient-descent lonely-i lonely-d lonely-u))
+
+(define try-plane
+  (lambda (a-gradient-descent)
+    (with-hypers
+        ((revs 15000)
+         (alpha 0.001)
+         (batch-size 4))
+      (a-gradient-descent (sampling-obj (l2-loss plane) plane-xs plane-ys)
+                          (list (tensor 0 0) 0)))))
+
+;; (try-plane lonely-gradient-descent)
+;; '((tensor 3.978802005223656 1.967861445812276) 6.163704752304487)
+
+(define naked-i
+  (lambda (p)
+    (let ((P p))
+      P)))
+
+(define naked-d
+  (lambda (P)
+    (let ((p P))
+      p)))
+
+(define naked-u
+  (lambda (P g)
+    (- P (* alpha g))))
+
+(define naked-gradient-descent
+  (new-gradient-descent naked-i naked-d naked-u))
+
+;; (try-plane naked-gradient-descent)
+;; '((tensor 3.978802005223656 1.967861445812276) 6.163704752304487)
+
+(declare-hyper mu)
+
+(define velocity-i
+  (lambda (p) (list p (zeroes p))))
+
+(define velocity-d
+  (lambda (P) (ref P 0)))
+
+(define velocity-u
+  (lambda (P g)
+    (let ((v (- (* mu (ref P 1)) (* alpha g))))
+      (list (+ (ref P 0) v) v))))
+
+(define velocity-gradient-descent
+  (new-gradient-descent velocity-i velocity-d velocity-u))
+
+(define new-try-plane
+  (lambda (a-gradient-descent a-revs)
+    (with-hypers
+        ((revs a-revs)
+         (alpha 0.001)
+         (batch-size 4))
+      (a-gradient-descent (sampling-obj (l2-loss plane) plane-xs plane-ys)
+                          (list (tensor 0 0) 0)))))
+
+(with-hypers
+    ((mu 0.9))
+  (new-try-plane velocity-gradient-descent 1000))
+;; '((tensor 3.9640144427797903 1.9448860283069427) 6.183501161299013)
