@@ -162,8 +162,20 @@
                       theta))))))
 
 (with-hypers
-    ((revs 1000)
+    ((revs 500)
      (alpha 0.01)
-     (batch-size 4))
+     (batch-size 3))
   (gradient-descent (sampling-obj (l2-loss line) line-xs line-ys)
                     (list 0 0)))
+
+(with-hypers
+    ((revs 2000)
+     (alpha 0.001)
+     (batch-size 5))
+  (gradient-descent (sampling-obj (l2-loss plane) plane-xs plane-ys)
+                    (list (tensor 0 0) 0)))
+
+;;; Chapter 7
+
+
+
