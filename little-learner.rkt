@@ -265,3 +265,10 @@
     ((mu 0.9))
   (new-try-plane velocity-gradient-descent 1000))
 ;; '((tensor 3.9640144427797903 1.9448860283069427) 6.183501161299013)
+
+;;; Interlude 4
+
+(define smooth
+  (lambda (decay-rate average g)
+    (+ (* decay-rate average)
+       (* (- 1 decay-rate) g))))
