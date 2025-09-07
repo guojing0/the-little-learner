@@ -252,7 +252,7 @@
 (define velocity-gradient-descent
   (new-gradient-descent velocity-i velocity-d velocity-u))
 
-(define new-try-plane
+(define second-try-plane
   (lambda (a-gradient-descent a-revs)
     (with-hypers
         ((revs a-revs)
@@ -263,7 +263,7 @@
 
 (with-hypers
     ((mu 0.9))
-  (new-try-plane velocity-gradient-descent 1000))
+  (second-try-plane velocity-gradient-descent 2000))
 ;; '((tensor 3.9640144427797903 1.9448860283069427) 6.183501161299013)
 
 ;;; Interlude 4
@@ -272,3 +272,61 @@
   (lambda (decay-rate average g)
     (+ (* decay-rate average)
        (* (- 1 decay-rate) g))))
+
+;; Chapter 8
+
+(declare-hyper beta)
+(define epsilon 1e-08)
+
+(define rms-u
+  (lambda (P g)
+    (let ((r (smooth beta (ref P 1) (sqr g))))
+      (let ((alpha-hat (/ alpha (+ (sqrt r) epsilon))))
+        (list (- (ref P 0) (* alpha-hat g)) r)))))
+
+(define rms-i
+  (lambda (p) (list p (zeroes p))))
+
+(define rms-d
+  (lambda (P) (ref P 0)))
+
+(define rms-gradient-descent
+  (new-gradient-descent rms-i rms-d rms-u))
+
+(define third-try-plane
+  (lambda (a-gradient-descent a-revs an-alpha)
+    (with-hypers
+        ((revs a-revs)
+         (alpha an-alpha)
+         (batch-size 4))
+      (a-gradient-descent (sampling-obj (l2-loss plane) plane-xs plane-ys)
+                          (list (tensor 0 0) 0)))))
+
+(with-hypers
+    ((beta 0.9))
+  (third-try-plane rms-gradient-descent 2000 0.01))
+
+(define adam-u
+  (lambda (P g)
+    (let ((r (smooth beta (ref P 2) (sqr g))))
+      (let ((alpha-hat (/ alpha (+ (sqrt r) epsilon)))
+            (v (smooth mu (ref P 1) g)))
+        (list (- (ref P 0) (* alpha-hat v)) v r)))))
+
+(define adam-i
+  (lambda (p)
+    (let ((v (zeroes p)))
+      (let ((r v))
+        (list p v r)))))
+
+(define adam-d
+  (lambda (P)
+    (ref P 0)))
+
+(define adam-gradient-descent
+  (new-gradient-descent adam-i adam-d adam-u))
+
+(with-hypers
+    ((mu 0.85)
+     (beta 0.9))
+  (third-try-plane adam-gradient-descent 1500 0.001))
