@@ -273,7 +273,7 @@
     (+ (* decay-rate average)
        (* (- 1 decay-rate) g))))
 
-;; Chapter 8
+;; Chapter 9
 
 (declare-hyper beta)
 (define epsilon 1e-08)
@@ -304,7 +304,7 @@
 
 (with-hypers
     ((beta 0.9))
-  (third-try-plane rms-gradient-descent 2000 0.01))
+  (third-try-plane rms-gradient-descent 1500 0.01))
 
 (define adam-u
   (lambda (P g)
@@ -329,4 +329,60 @@
 (with-hypers
     ((mu 0.85)
      (beta 0.9))
-  (third-try-plane adam-gradient-descent 1500 0.001))
+  (third-try-plane adam-gradient-descent 1500 0.01))
+
+;;; Interlude 5
+
+(require malt/interlude-V)
+
+(define of-rank?
+  (lambda (n t)
+    (cond ((zero? n) (scalar? t))
+          ((scalar? t) #f)
+          (else (of-rank? (sub1 n) (tref t 0))))))
+
+(define ext1
+  (lambda (f n)
+    (lambda (t)
+      (cond ((of-rank? n t) (f t))
+            (else (tmap (ext1 f n) t))))))
+
+(define new-sqrt
+  (ext1 sqrt-0 0))
+
+(define new-zeroes
+  (ext1 (lambda (x) 0) 0))
+
+(define new-sum
+  (ext1 sum-1 1))
+
+(define new-flatten
+  (ext1 flatten-2 2))
+
+(define rank>
+  (lambda (t u)
+    (cond ((scalar? t) #f)
+          ((scalar? u) #t)
+          (else (rank> (tref t 0) (tref u 0))))))
+
+(define of-ranks?
+  (lambda (n t m u)
+    (cond ((of-rank? n t) (of-ranks? m u))
+          (else #f))))
+
+(define desc
+  (lambda (g n t m u)
+    (cond ((of-rank? n t) (desc-u g t u))
+          ((of-rank? m u) (desc-t g t u))
+          ((= (tlen t) (tlen u)) (tmap g t u))
+          ((rank> t u) (desc-t g t u))
+          (else (desc-u g t u)))))
+
+(define ext2
+  (lambda (f n m)
+    (lambda (t u)
+      (cond ((of-ranks? n t m u) (f t u))
+            (else (desc (ext2 f n m) n t m u))))))
+
+
+
